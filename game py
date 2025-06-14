@@ -3,19 +3,132 @@
 import os
 import textwrap
 
-# Path to the save file
+#Path to the save file
 SAVE_FILE = "unlock_data.txt"
 
-# Function to check if the ring is unlocked
+#Start Again
+def game_loop():
+    while True:
+        main()
+        #Only exit on “no”
+        while True:
+            choice = input("\nWould you like to play again? (yes/no): ").strip().lower()
+            if choice == "yes":
+                #Start a fresh run
+                break      #Breaks out of the inner loop, back to calling main()
+            elif choice == "no":
+                print("Thanks for playing. Farewell, adventurer.")
+                return     #Exits game_loop altogether
+            else:
+                print("Please enter 'yes' or 'no'.")
+
+#Function to check if the ring is unlocked
 def has_ring_of_true_warding():
     return os.path.exists(SAVE_FILE)
 
-# Function to unlock the ring
+#lich encounter
+def lich_encounter(current_room, inventory, player_class, player_hp):
+    if current_room != "Phylactery Vault":
+        return player_hp  #only run when you actually enter the Vault
+
+    #Map each class to its special hidden relic
+    class_hidden_items = {
+        "Bard": "Lute of Secrets",
+        "Wizard": "Wish Scroll",
+        "Paladin": "Ancient Tome",
+        "Fighter": "Sun Blade"
+    }
+    player_class_item = class_hidden_items[player_class]
+
+    #Everything you could possibly collect before the final fight
+    all_items_required = {
+        "Blessed Candle", "Battle-worn Sword", "Holy Water Vial", "Prayer Scroll",
+        "Spellbook Page", "Silver Buckler", "Protective Amulet", "Soul Siphon Glyph",
+        "Undead Army Blueprint", "Rusty Key", "Cloak of Mastery", "Ring of True Warding"
+    }
+    all_items_required.add(player_class_item)
+
+    # 1) LEGENDARY ENDING: you have absolutely every item + your class relic
+    if all(item in inventory for item in all_items_required):
+        print("\n⚔️  **LEGENDARY ENDING UNLOCKED** ⚔️")
+        if player_class == "Bard":
+            print(
+                "Your haunting melody lures the Lich into a trance. The two of you vanish into mist, "
+                "locked in a seductive, cursed waltz across eternity. You gain mummy rot, but also a new duet partner.")
+        elif player_class == "Wizard":
+            print(
+                "With a whisper of the Wish Scroll, you rewrite your fate and the Lich's. "
+                "You become something greater, an immortal Archlich, master of the arcane.")
+        elif player_class == "Paladin":
+            print(
+                "You hold the Ancient Tome high and call forth judgment. Divine light erupts from above. "
+                "A celestial avatar descends and smites the Lich. You are named the Hand of the Divine.")
+        elif player_class == "Fighter":
+            print(
+                "You plunge the Sun Blade deep into the Lich’s phylactery. As the vault crumbles, you "
+                "set your sights on darker lands. Ravenloft calls. Evil fears your name.")
+        print("\nYou have reclaimed the Holy Training Grounds and ascended beyond mortality.")
+        print("🏆  You achieved the **TRUE LEGENDARY ENDING**. Well done, champion.")
+        return player_hp
+
+    # 2) CLASS-ONLY ENDING: you found your class’s secret relic
+    if player_class_item in inventory:
+        if player_class == "Bard":
+            print("\n🎵 With a trembling hand, you strum the Lute of Secrets.")
+            print(
+                "The melody is irresistible. The Lich pauses, then sways. His jaw unhinges slightly... is he blushing?")
+            print(
+                "The two of you vanish into the crypt shadows. Centuries later, tales circulate of a cursed romance ballad.")
+        elif player_class == "Wizard":
+            print("\n📜 You speak the final word from the Wish Scroll, and time itself halts.")
+            print(
+                "You don’t destroy him. You **become** him. A better version. A smarter, sassier Lich.")
+        elif player_class == "Paladin":
+            print("\n🕯 The Ancient Tome flutters open, glowing with celestial light.")
+            print("A voice beyond time speaks: 'Enough. I will intervene.'")
+            print(
+                "A divine hand crushes the Lich like a bug. You fall to one knee as golden wings erupt from your back.")
+        elif player_class == "Fighter":
+            print("\n🔥 The Sun Blade ignites in your hand as you charge the Lich head-on.")
+            print("Steel meets bone. Undead meets unrelenting gym rat.")
+            print("‘Alright. Who’s next? Someone said *Ravenloft*?’ You start walking.")
+        return player_hp
+
+    # 3) REGULAR ENDING (7+ items but no class relic)
+    if len(inventory) >= 7:
+        print(f"\nYou raise your weapon and confront the Lich.")
+        if "Rusty Key" in inventory:
+            unlock_ring_of_true_warding()
+        if player_class == "Bard":
+            print(
+                "With only a half-tuned lute, you sing your final performance. The Lich falters...")
+            print("Your music buys the world one more dawn.")
+        elif player_class == "Wizard":
+            print("You unleash an imperfect spell. Raw power arcs across the vault.")
+            print("The Lich collapses into a heap of arcane detritus. You survive... barely.")
+        elif player_class == "Paladin":
+            print("Without the Tome, your prayers are scattered, but your heart is steadfast.")
+            print("Your blade pierces the Lich's chest. The light answers.")
+        elif player_class == "Fighter":
+            print("You shrug. You’ve come this far without magic.")
+            print("One solid punch and the Lich’s skull skips across the vault floor. Victory.")
+        print("\nThe world is safe. But you know... it could’ve been more.")
+        return player_hp
+
+    # 4) UNPREPARED = instant game over
+    print("\nYou step into the Phylactery Vault, unprepared for what awaits.")
+    print(
+        "The Lich’s eyes blaze with cruel amusement. With a flick of his hand, your soul is torn from your body.")
+    print("Game Over.")
+    return 0
+
+
+#Function to unlock the ring
 def unlock_ring_of_true_warding():
     with open(SAVE_FILE, "w") as f:
         f.write("Ring of True Warding unlocked")
 
-# Function to reset ring unlock (i.e., on new game or class change)
+#Function to reset ring unlock (i.e., on new game or class change)
 def reset_ring_of_true_warding():
     if os.path.exists(SAVE_FILE):
         os.remove(SAVE_FILE)
@@ -24,7 +137,7 @@ def reset_ring_of_true_warding():
 #For password
 correct_words = set()
 
-# Magical Beacon Password Mechanic
+#Magical Beacon Password Mechanic
 PASSWORD_SEQUENCE = ["protect", "preserve", "persevere"]
 PASSWORD_PROGRESS = []
 
@@ -37,12 +150,12 @@ def say_to_beacon(word):
         PASSWORD_PROGRESS.append(word.lower())
         if PASSWORD_PROGRESS == PASSWORD_SEQUENCE:
             print("✨ The beacon pulses with radiant energy. The seal on the Secret Lab unlocks!")
-            rooms["Library"]["East"] = "Secret Room"  # Unlocks passage
+            rooms["Library"]["East"] = "Secret Room"  #Unlocks passage
         else:
             print(f"The beacon hums... the word '{word}' has been accepted.")
     else:
         print("❌ The beacon goes silent. The sequence has been broken.")
-        PASSWORD_PROGRESS = []  # Reset
+        PASSWORD_PROGRESS = []  #Reset
 
 def read_library_book():
     while True:
@@ -76,7 +189,7 @@ def read_library_book():
         except ValueError:
             print("Please enter a valid number.")
 
-# ASCII Art Title
+#ASCII Art Title
 def show_title():
     title = r"""
  _       _________ _______             _______           _______  _______ _________
@@ -94,8 +207,6 @@ def show_title():
     print("Type 'start' to begin your journey into the Lich's Lair.")
     input("\n> ")
 
-player_hp = 100  # Starting HP
-
 #Display game instructions to the player
 def show_instructions():
     lines = [
@@ -105,7 +216,7 @@ def show_instructions():
         "• In each room, if an exit is available, you can travel through it by typing:",
         "                         go [direction]  → Example: go East",
         "• In each room, if an item is available, you can collect it by typing:",
-        "                         get [item name]  → Example: get Silver Dagger",
+        "                         get [item name]  → Example: get Silver Buckler",
         #If you're in your class’s hidden item room, the item may reveal itself automatically.
         #Special relics like the Cloak of Mastery or Ring of True Warding are found through progression.
     ]
@@ -116,47 +227,12 @@ def show_instructions():
     print("-" * 100)
     print()
 
-def read_library_book():
-    while True:
-        print("\nYou stand before 5 rows of ancient shelves. Each row has 3 standout books.\n")
-        for i, (row, books) in enumerate(library_books.items(), start=1):
-            print(f"{row}:")
-            for j, book in enumerate(books, start=1):
-                print(f"  {j}. {book}")
-        try:
-            row_choice = input("\nWhich row do you want to browse? (1–5 or Q to quit): ").strip()
-            if row_choice.upper() == 'Q':
-                break
-            row_key = f"Row {int(row_choice)}"
-            if row_key not in library_books:
-                print("Invalid row.")
-                continue
-
-            books = library_books[row_key]
-            for idx, book in enumerate(books, start=1):
-                print(f"{idx}. {book}")
-            book_choice = input("Choose a book to read (1–3 or Q to return): ").strip()
-            if book_choice.upper() == 'Q':
-                continue
-
-            book_idx = int(book_choice) - 1
-            if 0 <= book_idx < len(books):
-                selected_book = books[book_idx]
-                print(f"\nYou read '{selected_book}':\n{book_flavor[selected_book]}")
-            else:
-                print("Invalid book number.")
-        except ValueError:
-            print("Please enter a valid number.")
-
-# Example call (put this where your library room triggers book interaction)
-# read_library_book()
-
 
 #Let the player choose a class
 def choose_class():
     box_width = 50
 
-    # Ask if they want to start a fresh game
+    #Ask if they want to start a fresh game
     if has_ring_of_true_warding():
         response = input("New Game+ detected. Would you like to start fresh? (yes/no): ").strip().lower()
         if response == "yes":
@@ -208,7 +284,7 @@ rooms = {
     },
     'Kitchen': {
         'South': 'Dining Hall',
-        'item': None  # Flavor only
+        'item': None  #Flavor only
     },
     'Courtyard': {
         'North': 'Entryway',
@@ -237,7 +313,7 @@ rooms = {
     'Barracks': {
         'North': 'Chapel',
         'West': 'Courtyard',
-        'item': 'Silver Dagger',
+        'item': 'Silver Buckler',
         'hidden': 'Sun Blade'
     },
     'Trap Room': {
@@ -248,7 +324,7 @@ rooms = {
     'Hero Graveyard': {
         'West': 'Chapel',
         'East': 'Catacombs',
-        'item': None  # Flavor only
+        'item': None  #Flavor only
     },
     'Catacombs': {
         'West': 'Hero Graveyard',
@@ -268,25 +344,65 @@ rooms = {
     }
 }
 
-#Room descriptions
+#Room descriptions for info box
 room_flavor = {
-    'Entryway': "You enter the Lich's Lair. Cracked stones and bone-littered earth greet your boots. The barred gate ahead looms like a jaw waiting to snap shut.",
-    'Dining Hall': "The banquet rots where it was last served. Skulls sit at every bench, lit by chandeliers still burning with unnatural flame.",
-    'Kitchen': "Rusting cleavers, cracked pots, and broken barrels fill the room. Bones and blood-black stains hint at a final, grisly preparation.",
-    'Courtyard': "Under a crimson sky, rust-veined walls close in on a battlefield of swords, bones, and silence. The air carries the scent of decay and regret.",
-    'Alchemy Lab': "Shelves of dust-covered flasks crowd the stone chamber. A green flame flickers in a cauldron. Magic once brewed here—and something of it still lingers.",
-    'Library': "Books tower around you. Dust cloaks ancient tomes while a ghostly page floats above a candlelit desk, whispering forgotten knowledge.",
-    'Chapel': "Broken stained glass filters dying light over a glowing scroll on a pedestal. Twisted roots crawl up the walls like veins in a corpse.",
-    'Barracks': "Dusty bunks and abandoned gear line the cold stone room. The armor may be empty, but the eyes of the dead still watch.",
-    'Hero Graveyard': "Dead heroes lie in silence. Mausoleums line cracked paths as a lifeless tree stretches into a storm-dark sky. The wind does not blow here.",
-    'Catacombs': "Collapsed stone and tangled roots frame a rusted iron gate. An orange key lies half-buried in rubble—unclaimed, unwatched, or bait.",
-    'Phylactery Vault': "The floor glows with cursed sigils. Wailing spirits scream from the walls as the Lich emerges through a crumbling arch, eyes glowing, staff raised.",
-    'Trap Room': "Ethereal skulls swirl around you as a glowing glyph pulses on the stone floor. Your breath catches—this room was made to kill.",
-    'Secret Room': "A slab bears a glowing blueprint of an undead army. The air is thick with dust and dread—this was no lab, but a war room for the damned.",
-
+    'Entryway': (
+        "Cracked stones and scattered bones litter the ground, a silent warning to all who dare enter. "
+        "The barred gate ahead looms like a jaw, waiting to snap shut on the unwary."
+    ),
+    'Dining Hall': (
+        "The long table groans beneath a spectral feast, plates set for warriors who will never return. "
+        "Silverware floats, as if gripped by unseen hands longing for one final meal. "
+        "At its head, a lone blessed candle flickers... the last defiance of the fallen."
+    ),
+    'Kitchen': (
+        "Rusting cleavers, cracked pots, and broken barrels fill the room. "
+        "Blood-black stains and gnawed bones whisper of a final, desperate meal."
+    ),
+    'Courtyard': (
+        "A battlefield of shattered shields and sundered bones stretches beneath a crimson sky. "
+        "The banners of the fallen hang in tatters, their sacrifice forgotten by all but the restless dead."
+    ),
+    'Alchemy Lab': (
+        "The wreckage of forbidden experiments surrounds you. "
+        "Shattered glass crunches underfoot, and a sickly glow leaks from broken vials. "
+        "The air reeks of failure and corruption."
+    ),
+    'Library': (
+        "Dust cloaks towering shelves and ancient tomes. A spectral page floats above a candlelit desk, "
+        "whispering secrets best left forgotten."
+    ),
+    'Chapel': (
+        "A ruined chapel, its shattered stained glass casting fractured saints onto cold stone. "
+        "A scorched altar stands defiled, and a lone prayer scroll lies draped over a crumbling lectern."
+    ),
+    'Barracks': (
+        "Blood-stained cots sag beneath broken purity seals, the air thick with betrayal. "
+        "Many fell here in their sleep... martyrs unremembered, their bodies now twisted in undeath."
+    ),
+    'Hero Graveyard': (
+        "Graves lie torn open, their honored dead stolen to fuel the Lich’s legions. "
+        "The once-great champions of justice stand now as mindless slaves, their legacies trampled and defiled."
+    ),
+    'Catacombs': (
+        "Bones litter the ground, and crude sigils mar the walls. "
+        "A phalanx of abominations stands before the vault, the last desecrated guardians of what was holy."
+    ),
+    'Phylactery Vault': (
+        "The floor glows with cursed sigils, the walls alive with the screams of trapped souls. "
+        "Through a crumbling arch, the Lich waits. Staff raised, eyes burning with malice."
+    ),
+    'Trap Room': (
+        "A glowing glyph pulses on cracked stone as spectral skulls swirl in silent menace. "
+        "Every breath here feels stolen, every step a gamble with death."
+    ),
+    'Secret Room': (
+        "The air is heavy with dust and dread. "
+        "Half-formed undead horrors hang from chains, and at the center, the Arch Paladin’s armor stands silent; a monument to lost honor."
+    ),
 }
 
-# Puzzle book data for the Library
+#Puzzle book data for the Library
 library_books = {
     "Row 1": ["The Paladin's Oath", "The Lich Before the Fall", "Unreadable Tome I"],
     "Row 2": ["The Heroic Bard", "The Shattered Sigil", "Unreadable Tome II"],
@@ -341,7 +457,7 @@ book_flavor = {
     "The Lich's Betrayal":
         "\nThe council wept as trust was slain,"
         "\nHe smiled and cast the world in pain."
-        "\nThey gave him love; he offered rot—"
+        "\nThey gave him love; he offered rot,"
         "\nAnd laughed when history forgot.",
     "Final Days of the Lich":
         "\nHe wandered halls of bone and dust,"
@@ -357,7 +473,7 @@ book_flavor = {
         "\nVows must hold the dark at bay."
         "\nEvery breath defies defeat,"
         "\nRefuse to kneel, remain complete."
-        "\nEndings come—but not today.",
+        "\nEndings come, but not today.",
     "Unreadable Tome I": "Prû-Tøk dja’vlara zenth kolven!",
     "Unreadable Tome II": "[✶ ℙřęšëṛvȅ š’vath ûllé mâgr!",
     "Unreadable Tome III": "Përśëväriũm glath no’quor xi’el⟧",
@@ -367,28 +483,37 @@ book_flavor = {
 
 #Stop breaking the box
 def wrap_text_in_box(label, text, box_width=100):
-    max_line_length = box_width - 4  # 2 for borders, 2 for padding
+    max_line_length = box_width - 4  #2 for borders, 2 for padding
     words = text.split(", ")
     lines = []
-    current_line = label
+    current_line = ""
 
-    for word in words:
-        if len(current_line) + len(word) + 2 <= max_line_length:
-            if current_line:
-                current_line += ", " + word
-            else:
-                current_line = word
+    for i, word in enumerate(words):
+        if i == 0:
+            #first word: prefix with the label but no comma
+            current_line = f"{label} {word}"
+        elif len(current_line) + len(word) + 2 <= max_line_length:
+            #still room on this line
+            current_line += ", " + word
         else:
+            #wrap to the next line
             lines.append(current_line)
-            current_line = "  " + word  # Indent continued lines
+            current_line = "  " + word  #indent continuation lines
 
+    #don’t forget the last line
     if current_line:
         lines.append(current_line)
 
+    #now print each line inside the box
     for line in lines:
         print("| " + line.ljust(box_width - 4) + " |")
 
 def show_status(current_room, inventory, rooms, player_hp, max_hp):
+    #Updated flavor text for DH
+    if current_room == "Dining Hall" and "Blessed Candle" in inventory:
+        room_flavor[
+            "Dining Hall"] = "The room is dark, which is preferable to the haunted scene you came upon earlier."
+
     box_width = 100
     print("\n" + "-" * box_width)
     print("|" + f"You are in the {current_room}".center(box_width - 2) + "|")
@@ -397,10 +522,10 @@ def show_status(current_room, inventory, rooms, player_hp, max_hp):
         print("| " + line.ljust(box_width - 4) + " |")
     print("|" + " " * (box_width - 2) + "|")
 
-    # HP with flavor
+    #HP with flavor
     print("|" + f"HP: {player_hp}/{max_hp}".ljust(box_width - 2) + "|")
     if player_hp == max_hp:
-        print("|" + "You feel unshaken — a beacon of vitality in the cursed dark.".ljust(box_width - 2) + "|")
+        print("|" + "You feel unshaken! A beacon of vitality in the cursed dark.".ljust(box_width - 2) + "|")
     elif player_hp >= 75:
         print("|" + "You’re bruised but strong. The fight is far from over.".ljust(box_width - 2) + "|")
     elif player_hp >= 50:
@@ -408,7 +533,7 @@ def show_status(current_room, inventory, rooms, player_hp, max_hp):
     elif player_hp >= 25:
         print("|" + "Your vision blurs. Each heartbeat is a thunderclap of survival.".ljust(box_width - 2) + "|")
     else:
-        print("|" + "You are clinging to life — a single breath from death.".ljust(box_width - 2) + "|")
+        print("|" + "You are clinging to life... a single breath from death.".ljust(box_width - 2) + "|")
 
     print("|" + " " * (box_width - 2) + "|")
 
@@ -416,11 +541,11 @@ def show_status(current_room, inventory, rooms, player_hp, max_hp):
     if inventory:
         wrap_text_in_box("Inventory:", ", ".join(inventory))
     else:
-        print("| Inventory: (empty)".ljust(box_width - 1) + "|")
+        print("| Inventory: []".ljust(box_width - 1) + "|")
 
     print("|" + " " * (box_width - 2) + "|")
 
-    # Valid directions and special Catacombs logic
+    #Valid directions and special Catacombs logic
     valid_dirs = [d for d in ['North', 'South', 'East', 'West'] if d in rooms[current_room]]
     print("|" + " " * (box_width - 2) + "|")
 
@@ -447,10 +572,11 @@ def show_status(current_room, inventory, rooms, player_hp, max_hp):
 
     print("|" + " " * (box_width - 2) + "|")
     print("|" + "To move, type: go [direction] (e.g., 'go North')".ljust(box_width - 2) + "|")
-    print("-" * (box_width))
+    print("|" + "To obtain an item, type: get [item name]".ljust(box_width - 2) + "|")
+    print("-" * box_width)
     print()
 
-    # Show item in room if available and not already taken
+    #Show item in room if available and not already taken
     item = rooms[current_room].get('item')
     if item and item not in inventory:
         print(f"You see a {item}")
@@ -460,8 +586,9 @@ def show_status(current_room, inventory, rooms, player_hp, max_hp):
 def handle_obstacle(current_room, player_hp, inventory, player_class, visited_rooms, max_hp):
     #No repeats
     if current_room in visited_rooms:
-        return player_hp  # Already did the obstacle here
-    # Entryway (re-enter space) obstacle
+        return player_hp  #Already did the obstacle here
+
+    #Entryway (re-enter space) obstacle
     if current_room == "Entryway":
         print("You cautiously step back into the Entryway. Crumbled stone and shattered bones litter the ground.")
         print("Amid the debris, something glints faintly beneath a pile of rubble.")
@@ -489,7 +616,7 @@ def handle_obstacle(current_room, player_hp, inventory, player_class, visited_ro
 
             if second_choice == "1":
                 if "Rusty Key" not in inventory:
-                    print("You reach deeper and find a cold, corroded object — it's a Rusty Key!")
+                    print("You reach deeper and find a cold, corroded object... it's a Rusty Key!")
                     inventory.append("Rusty Key")
                 else:
                     print("You find only more dust. The key is already in your possession.")
@@ -497,6 +624,7 @@ def handle_obstacle(current_room, player_hp, inventory, player_class, visited_ro
                 print("You stop. Whatever’s buried there can remain lost... for now.")
         else:
             print("You step past the rubble. Perhaps caution will keep you alive.")
+
     #Library
     if current_room == "Library":
         while True:
@@ -540,26 +668,344 @@ def handle_obstacle(current_room, player_hp, inventory, player_class, visited_ro
             else:
                 print("Invalid choice. Try again.")
 
+    #Secret Room Obstacle
+    if current_room == "Secret Room":
+        print("The Secret Room is no refuge... it is a chamber of horror.")
+        print("Hordes of half-formed undead abominations writhe mid-creation, bound to slabs,")
+        print("their mouths frozen in eternal, silent screams.")
+        print("At the center stands a single corpse, still and watching.")
+        print("It wears the ruined armor of an Arch Paladin, eyes glowing faintly,")
+        print("as if it remembers honor... or longs for release.")
+
+        total_damage = 0
+        player_hp = max(player_hp, 0)
+        found_weakness = False
+
+        #Phase 1
+        print("\nThe Arch Paladin’s corpse steps forward, blade of bone in hand.")
+        print("Do you:")
+        print("  1. Charge head-on")
+        print("  2. Try to reason with it")
+        print("  3. Search for a weakness in its form")
+        choice = input("Choose 1, 2, or 3: ").strip()
+
+        print("\n" + "*" * 100)
+
+        if choice == "1":
+            print("Your charge is brave, but the creature counters with unnatural speed.")
+            damage = 15
+            total_damage += damage
+            player_hp -= damage
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+        elif choice == "2":
+            print("You speak words of peace, but the monster’s soul is too far gone.")
+            damage = 10
+            total_damage += damage
+            player_hp -= damage
+            print(f"It hesitates... then strikes. You take {damage} damage. Current HP: {player_hp}")
+        elif choice == "3":
+            print("You spot a crack in the armor at the neck; a glimmer of hope for the next strike.")
+            found_weakness = True
+        else:
+            print("Your hesitation costs you dearly as the creature slashes at you.")
+            damage = 10
+            total_damage += damage
+            player_hp -= damage
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+
+        #Phase 2
+        print("\nThe Arch Paladin advances again, its blade dragging sparks from the stone floor.")
+        print("Do you:")
+        if found_weakness:
+            print("  1. Aim for the crack in the armor")
+        else:
+            print("  1. Attack at random")
+        print("  2. Defend and wait for an opening")
+        print("  3. Throw a handful of sand")
+        choice = input("Choose 1, 2, or 3: ").strip()
+
+        print("\n" + "*" * 100)
+
+        if choice == "1":
+            if found_weakness:
+                print("Your strike hits the crack! The creature staggers, its grip falters.")
+            else:
+                print("Your strike glances off the heavy armor. The creature retaliates.")
+                damage = 10
+                total_damage += damage
+                player_hp -= damage
+                print(f"You take {damage} damage. Current HP: {player_hp}")
+        elif choice == "2":
+            print("You hold firm. The blow you block numbs your arm, but buys time.")
+            damage = 10
+            total_damage += damage
+            player_hp -= damage
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+        elif choice == "3":
+            print("You hurl debris. The sanctified earth causes the creature’s form buckle.")
+        else:
+            print("Your indecision allows the creature to strike once more.")
+            damage = 10
+            total_damage += damage
+            player_hp -= damage
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+
+        #Phase 3
+        print("\nIt rises for a final attack, its soul flickering like a dying flame.")
+        print("Do you:")
+        print("  1. Deliver a final, decisive blow")
+        print("  2. Cast down your weapon and offer mercy")
+        print("  3. Call upon any holy relic in your possession")
+        choice = input("Choose 1, 2, or 3: ").strip()
+
+        print("\n" + "*" * 100)
+
+        if choice == "1":
+            print("Your weapon cleaves through bone and curse alike. The creature collapses.")
+        elif choice == "2":
+            print("You offer mercy. The creature pauses... and bows its head before falling still.")
+        elif choice == "3":
+            print("Your relic glows, its light banishing the final trace of corruption.")
+        else:
+            print("Your hesitation lets the creature land one last blow.")
+            damage = 10
+            total_damage += damage
+            player_hp -= damage
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+
+        #Healing and conclusion
+        print("\nThe Arch Paladin’s corpse, freed of its torment, extends a spectral hand.")
+        print("A soft light surrounds you, mending flesh and spirit alike.")
+        heal = 20
+        player_hp = min(player_hp + heal, max_hp)
+        print(f"You are healed for {heal} HP. Current HP: {player_hp}")
+        print("The creature fades, leaving the room eerily silent once more.")
+
+    #Hero Graveyard obstacle
+    if current_room == "Hero Graveyard":
+        print(
+            "You step into the Hero Graveyard, where mausoleums crumble and ancient statues weep cracks of stone dust.")
+        print(
+            "What should be hallowed ground is defiled... the graves torn open, their honored dead stolen for foul purposes.")
+        print(
+            "Everywhere lie signs of desecration: shattered armor, broken swords, and bones carted off to fuel the Lich’s armies.")
+        print(
+            "Once, these warriors stood for justice and order. Now, their hollow-eyed remnants march as mindless slaves, weapons of their greatest enemy.")
+        print(
+            "You feel the weight of their shame pressing down upon you; their legacies trampled beneath the Lich’s boot.")
+
+        if player_class == "Paladin":
+            print("\nA hollow breeze seems to whisper through the broken headstones, as if calling to you.")
+            print("You feel your oath tremble beneath the burden of their disgrace. Their silent pleas demand justice.")
+            print("Do you:")
+            print("  1. Kneel and rededicate your vow to avenge them.")
+            print("  2. Whisper a prayer, offering what little respect remains.")
+            print("  3. Rage at the injustice, vowing to set this right.")
+        else:
+            print("\nDo you:")
+            print("  1. Whisper a prayer, offering what little respect remains.")
+            print("  2. Rage at the injustice, vowing to set this right.")
+
+        choice = input("Choose your option: ").strip()
+
+        print("\n" + "*" * 100)
+
+        if player_class == "Paladin":
+            if choice == "1":
+                print("You kneel among the shattered stones, your gauntlet resting on broken earth.")
+                print("Your voice rises in a vow of retribution. The Lich will pay for this desecration!")
+                print("A faint warmth spreads through your chest, as if the fallen lend you strength.")
+            elif choice == "2":
+                print("Your prayer drifts upward, a promise that they are not forgotten.")
+                print("For a moment, the graveyard’s heavy silence seems gentler, as if the dead acknowledge you.")
+            elif choice == "3":
+                print("Your fury rings through the graveyard like a bell of judgment.")
+                print("Your oath, once steady, burns anew with purpose. The Lich shall know your wrath!")
+            else:
+                print("You hesitate, and the silence of the graveyard deepens... a reminder of all that’s been lost.")
+        else:
+            if choice == "1":
+                print(
+                    "Your words are lost on the windless air, but for a moment, the graveyard feels a little less empty.")
+                print("A faint glow flickers behind a cracked helm, as if the soul within heard you.")
+            elif choice == "2":
+                print(
+                    "Your fury echoes among the tombstones. A vow forged in sorrow steels your heart, you will not let this stand.")
+            else:
+                print("You hesitate, and the silence of the graveyard deepens... a reminder of all that’s been lost.")
+
+    #Catacombs obstacle
+    if current_room == "Catacombs":
+        print(
+            "The catacombs reek of rot and despair. Bones litter the floor, and the walls are etched with crude symbols of undeath.")
+        print("Before the great iron door to the Lich's vault, a phalanx of abominations stands guard.")
+        print(
+            "Once holy defenders of this place, these broken forms now serve the Lich's will, bound in chains of dark magic.")
+        print("Their hollow eyes glow faintly, as if pleading for release even as they raise their rusted weapons.")
+
+        if "Undead Army Blueprint" in inventory:
+            print("Your eyes catch on a crude device half-buried in rubble. You recognize it from the Lich's designs.")
+            choice = input("Do you tamper with the device using the blueprint's knowledge? (yes/no): ").strip().lower()
+
+            print("*" * 100)
+
+            if choice == "yes":
+                print(
+                    "With swift hands, you sabotage the mechanism. A pulse of necrotic energy ripples through the catacombs.")
+                print("The abominations collapse like puppets with severed strings. Their torment has ended.")
+                print("You take no damage. The path to the vault lies open.")
+                visited_rooms.add(current_room)
+                return player_hp
+            else:
+                print("You hesitate. The undead begin their advance.")
+
+        print("Do you:")
+        print("  1. Lead the charge and try to break through their ranks.")
+        print("  2. Attempt to find a weakness in their formation and slip past.")
+
+        choice = input("Choose 1 or 2: ").strip()
+
+        print("*" * 100)
+
+        if choice == "1":
+            damage = 15
+            player_hp -= damage
+            print("You crash into their line. Bone and steel meet in a brutal clash.")
+            if player_class == "Bard":
+                print("Your battle song echoes in the depths, stirring courage in your heart.")
+            elif player_class == "Wizard":
+                print("Arcane bolts flare as you blast apart the front ranks, but not without cost.")
+            elif player_class == "Paladin":
+                print("You cry out a prayer for mercy on these twisted souls as you strike them down.")
+            elif player_class == "Fighter":
+                print("You swing wide, shattering rib cages and skulls with raw might.")
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+        elif choice == "2":
+            damage = 10
+            player_hp -= damage
+            print("You slip between gaps, ducking claws and blades, but not unscathed.")
+            if player_class == "Bard":
+                print("A clever tune guides your feet, but a lucky strike still draws blood.")
+            elif player_class == "Wizard":
+                print("A flicker of magic shields you from the worst, but pain flares where you're grazed.")
+            elif player_class == "Paladin":
+                print("Every step feels like betrayal, but you press on as steel bites your side.")
+            elif player_class == "Fighter":
+                print("You weave between blows, but a rusted spear nicks your side.")
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+        else:
+            damage = 20
+            player_hp -= damage
+            print("You hesitate. The undead surge forward and strike you down.")
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+
+    #Barracks obstacle
+    if current_room == "Barracks":
+        print("You step into the Barracks. Blood-stained cots sag under the weight of forgotten sins.")
+        print("Purity seals are slashed and stomped into the stone. The air is thick with sorrow.")
+        print("It dawns on you: many of the fallen were slain in their sleep, betrayed by unseen hands.")
+        print(
+            "Suddenly, the broken bodies of the once sanctified forces of justice rise, hollow eyes burning with anguish.")
+
+        print("Do you:")
+        print("  1. Stand your ground and fight")
+        print("  2. Retreat and seal the door behind you")
+
+        choice = input("Choose 1 or 2: ").strip()
+
+        print("\n" + "*" * 100)
+
+        if choice == "1":
+            damage = 12
+            player_hp -= damage
+            if player_class == "Bard":
+                print(
+                    "You strum a mournful chord, the sorrow in your song giving the dead pause before you strike them down.")
+            elif player_class == "Wizard":
+                print(
+                    "You summon a ring of flame, their armored forms collapsing as grief consumes them one last time.")
+            elif player_class == "Paladin":
+                print("You raise your shield, tears falling as your blade grants them final peace.")
+            elif player_class == "Fighter":
+                print("You grit your teeth, cleaving through the tragic foes with brutal mercy.")
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+        elif choice == "2":
+            damage = 20
+            player_hp -= damage
+            print("You slam the door shut, but not before spectral blades find your flesh.")
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+        else:
+            damage = 15
+            player_hp -= damage
+            print("Your hesitation costs you dearly as the revenants close in.")
+            print(f"You take {damage} damage. Current HP: {player_hp}")
+
+    #Chapel
+    if current_room == "Chapel":
+        print("You step into the ruined chapel. Broken pews lie scattered like forgotten hopes.")
+        print("Shattered stained glass casts fractured saints onto the cold stone floor.")
+        print(
+            "A scorched altar stands defiled, and a prayer scroll lies draped over a crumbling lectern... untouched, yet mourned.")
+        print("Do you:")
+        print("  1. Kneel and pray at the altar")
+        print("  2. Search the rubble")
+
+        if player_class == "Paladin":
+            print("  3. Attempt to clean and restore the chapel")
+
+        choice = input("Choose 1, 2" + (" or 3" if player_class == "Paladin" else "") + ": ").strip()
+
+        print("\n" + "*" * 100)
+
+        if choice == "1":
+            print("You kneel at the altar. The silence is heavy, as if the gods themselves grieve this place.")
+            if player_class == "Paladin":
+                print(
+                    "Your heart aches. The weight of your oath feels brittle, your vow reshaped into a quiet promise of justice.")
+            else:
+                print("You feel no peace, only the echo of forgotten prayers.")
+
+        elif choice == "2":
+            print("You sift gently through the rubble. The broken pieces of faith lie cold beneath your fingers.")
+            print("There is nothing here that can mend what was lost, but the act brings a moment of stillness.")
+
+        elif choice == "3" and player_class == "Paladin":
+            print("You set about righting fallen pews and gathering shattered glass.")
+            print("You lift the prayer scroll from the dust, draping it anew over the lectern with reverence.")
+            print("A warmth stirs within you... faint, but true. The chapel feels a little less forsaken.")
+            heal = 10
+            player_hp = min(player_hp + heal, max_hp)
+            print(f"You regain {heal} HP. Current HP: {player_hp}")
+
+        else:
+            print("You hesitate, and the chapel remains steeped in sorrow.")
 
     #Alchemy Lab obstacle
     if current_room == "Alchemy Lab":
-        print("You approach a shattered workbench. A pungent vapor lingers in the air.")
+        print("You step into the ruined Alchemy Lab. Shattered glass crunches beneath your boots,")
+        print("and the air shimmers with toxic haze. A single vial glows faintly on a cracked workbench,")
+        print("its contents swirling as if alive; a remnant of forbidden experiments.")
 
-        choice = input("Do you want to investigate the glowing vial? (yes/no): ").strip().lower()
+        choice = input("Do you dare to approach the vial and investigate? (yes/no): ").strip().lower()
 
-        print("\n" + ("*" * 100))  # Line break and visual separator
+        print("\n" + ("*" * 100))
 
         if choice == "yes":
-            print("The vial explodes in a flash of light and heat. Alchemical fire scorches your arm.")
+            print("You reach for the vial. It trembles violently before bursting in a burst of emerald flame!")
+            print("A searing wave of alchemical fire lashes your arm, the fumes burning your lungs.")
             damage = 10
             player_hp -= damage
             print(f"You take {damage} damage. Current HP: {player_hp}")
         else:
-            print("You wisely keep your distance. Whatever that was, it's too unstable.")
+            print("You step back, the vial's glow casting strange shadows across the wreckage.")
+            print("Whatever power lingers here is best left undisturbed.")
 
         #Dining Hall
     if current_room == "Dining Hall":
-        print("A ghostly banquet shimmers into view. Silverware floats. The food smells... divine.")
+        print("The long table groans beneath a spectral feast, plates set for warriors who will never return.")
+        print("Silverware floats, as if gripped by unseen hands longing for one final meal.")
+        print(
+            "The only light comes from a lone, blessed candle at the head of the table. Its flame a defiant whisper against the dark.")
         print("Do you:")
         print("  1. Eat the spectral food")
         print("  2. Resist the temptation")
@@ -569,16 +1015,17 @@ def handle_obstacle(current_room, player_hp, inventory, player_class, visited_ro
         print("\n" + "*" * 100)
 
         if choice == "1":
-            print("The food turns to ash in your mouth, draining your energy as visions of death cloud your mind.")
+            print("You lift the ghostly fare to your lips. The flavor is ash, the warmth a lie.")
+            print("Visions of the warriors' last stand flood your mind, their final prayers unanswered.")
             damage = 8
             player_hp -= damage
             print(f"You take {damage} damage. Current HP: {player_hp}")
         elif choice == "2":
-            print("You clench your jaw and look away. Hunger is better than whatever this is.")
+            print("Your stomach growls, but you turn away. Hunger is a mercy compared to sharing in their sorrow.")
         else:
-            print("You hesitate and the vision fades.")
+            print("You hesitate... and the vision of the banquet fades, leaving only emptiness behind.")
 
-        # Kitchen
+        #Kitchen
     if current_room == "Kitchen":
         print("A slab of preserved meat lies atop a cracked prep station. It reeks, but it's technically edible.")
         print("Do you:")
@@ -603,10 +1050,14 @@ def handle_obstacle(current_room, player_hp, inventory, player_class, visited_ro
         else:
             print("You hesitate, and the smell alone is enough to turn your stomach.")
 
-        # Courtyard
+        #Courtyard
     if current_room == "Courtyard":
-        print("The bones scattered across the courtyard begin to clatter and rise...")
-        print("Skeletal warriors emerge, their hollow eyes locking onto you.")
+        print("The courtyard is littered with bones, shattered shields, and rusted blades.")
+        print(
+            "Here, countless defenders once made their last stand. Their sacrifice forgotten, their remains defiled.")
+        print("As you step forward, the broken bodies of fallen heroes shudder and rise.")
+        print(
+            "Hollow eyes burn with a pale, mournful light. Their torn banners hang like nooses in the crimson sky.")
         print("Do you:")
         print("  1. Stand and fight")
         print("  2. Flee to cover")
@@ -619,28 +1070,36 @@ def handle_obstacle(current_room, player_hp, inventory, player_class, visited_ro
             damage = 10
             player_hp -= damage
             if player_class == "Bard":
-                print("You strum a wild battle hymn, distracting them just long enough to smash a skull.")
+                print(
+                    "You strum a haunting battle hymn, and for a heartbeat, the dead hesitate. Then bone meets lute and splinters fly.")
             elif player_class == "Wizard":
-                print("A burst of arcane fire knocks several skeletons back, but one lands a hit before crumbling.")
+                print(
+                    "Arcane fire erupts from your fingers, burning through sorrow and bone alike. One strikes you as it falls.")
             elif player_class == "Paladin":
-                print("With shield raised high, you chant a sacred vow and cleave through the undead ranks.")
+                print(
+                    "With shield high and voice steady, you whisper a prayer and cleave through the wretched dead, granting them final peace.")
             elif player_class == "Fighter":
-                print("You roar and charge, bone splinters flying as your weapon crashes through ribcages.")
+                print(
+                    "With a roar of fury and grief, you wade into the fray, your weapon shattering skulls that should have been honored.")
             print(f"You take {damage} damage.")
         elif choice == "2":
             damage = 30
             player_hp -= damage
             if player_class == "Bard":
-                print("Your rhythm breaks as arrows rain down — a dissonant retreat filled with pain.")
+                print(
+                    "Your melody falters as the dead loose arrows, their aim guided by ancient rage. You stumble into cover, bleeding.")
             elif player_class == "Wizard":
-                print("You vanish in a puff of smoke, but a dozen arrows still find your fading trail.")
+                print("You vanish behind a veil of illusion, but spectral arrows pierce the lie... and your flesh.")
             elif player_class == "Paladin":
-                print("Retreating with honor wounds deeper than arrows, but your armor can’t stop them all.")
+                print(
+                    "You retreat, each arrow a reminder of your failure to save these souls. Your armor slows you as the volleys strike true.")
             elif player_class == "Fighter":
-                print("You backpedal into cover, grunting as arrows pepper your legs and shoulders.")
+                print(
+                    "You dive for cover, but the storm of bone-tipped arrows finds you. Pain sears through your limbs.")
             print(f"You take {damage} damage.")
         else:
-            print("You hesitate — and the skeletons pounce! You narrowly escape, but not without injury.")
+            print(
+                "You freeze, overwhelmed by the weight of their forgotten sacrifice. The risen dead swarm you in sorrow and fury.")
             player_hp -= 20
             print("You take 20 damage.")
 
@@ -656,20 +1115,12 @@ def game_over():
     input("\nPress Enter to restart your journey...")
     game_loop()
 
-def game_loop():
-    while True:
-        main()
-        choice = input("\nWould you like to play again? (yes/no): ").strip().lower()
-        if choice != "yes":
-            print("Thanks for playing. Farewell, adventurer.")
-            return
-
 
 def main():
     show_title()
     show_instructions()
 
-    print()  # spacer before class selection
+    print()  #spacer before class selection
     player_class = choose_class()
 
     visited_rooms = set()
@@ -713,6 +1164,14 @@ def main():
             else:
                 print("Rusty Key is already in your inventory.")
 
+        #cheater BP
+        elif move.lower() == "dev get blueprints":
+            if "Undead Army Blueprint" not in inventory:
+                inventory.append("Undead Army Blueprint")
+                print("Developer Command: Undead Army Blueprint added to inventory.")
+            else:
+                print("You already have the Undead Army Blueprint.")
+
         #Cheaty pants Ring
         elif move.lower() == "dev get ring":
             if "Ring of True Warding" not in inventory:
@@ -720,6 +1179,20 @@ def main():
                 print("Developer Command: Ring of True Warding added to inventory.")
             else:
                 print("You already have the Ring of True Warding.")
+
+        elif move.lower().startswith("get "):
+            item_input = move[4:].strip().lower()
+            room_item = rooms[current_room].get("item")
+
+            if room_item and item_input == room_item.lower():
+                if room_item not in inventory:
+                    inventory.append(room_item)
+                    print(f"You have collected the {room_item}!")
+                else:
+                    print(f"You already have the {room_item}.")
+            else:
+                print(f"There is no '{item_input}' here to get.")
+
 
         elif move.startswith('Go '):
             direction = move[3:]
@@ -742,7 +1215,7 @@ def main():
                     print("Game Over.")
                     return
 
-                # Check if player just entered their class-specific hidden item room
+                #Check if player just entered their class-specific hidden item room
                 hidden_item = rooms[current_room].get("hidden")
                 if hidden_item:
                     if "Cloak of Mastery" in inventory:
@@ -751,29 +1224,29 @@ def main():
                                 inventory.append(hidden_item)
                                 print("\n🎵 As you step into the room, an unseen melody stirs the air.")
                                 print(
-                                    "Your fingers move instinctively — the Lute of Secrets materializes in your grasp, resonating with forgotten songs of power.")
+                                    "Your fingers move instinctively, the Lute of Secrets materializes in your grasp, resonating with forgotten songs of power.")
                         elif player_class == "Wizard" and hidden_item == "Wish Scroll":
                             if hidden_item not in inventory:
                                 inventory.append(hidden_item)
                                 print("\n✨ Arcane winds whip through the room as runes ignite around you.")
                                 print(
-                                    "Floating before you is the legendary Wish Scroll — it glows with raw potential as if awaiting your will to reshape reality.")
+                                    "Floating before you is the legendary Wish Scroll! It glows with raw potential as if awaiting your will to reshape reality.")
                         elif player_class == "Paladin" and hidden_item == "Ancient Tome":
                             if hidden_item not in inventory:
                                 inventory.append(hidden_item)
                                 print("\n🕯 A blinding pillar of divine light crashes down from the shattered ceiling.")
                                 print(
-                                    "The Ancient Tome levitates from a crumbling altar, its pages inscribed by the hand of a forgotten god — it opens for you alone.")
+                                    "The Ancient Tome levitates from a crumbling altar, its pages inscribed by the hand of a forgotten god. It opens for you alone.")
                         elif player_class == "Fighter" and hidden_item == "Sun Blade":
                             if hidden_item not in inventory:
                                 inventory.append(hidden_item)
                                 print("\n🔥 The ground trembles beneath your feet as the stone cracks open.")
                                 print(
-                                    "From the earth rises the Sun Blade — not sheathed, but blazing with holy fury. Its heat welcomes you like an old comrade.")
+                                    "From the earth rises the Sun Blade, unsheathed, but blazing with holy fury. Its heat welcomes you like an old comrade.")
 
 
 
-                # Check for Trap Room behavior
+                #Check for Trap Room behavior
                 if current_room == "Trap Room":
                     if "Ring of True Warding" not in inventory:
                         game_over()
@@ -784,7 +1257,7 @@ def main():
                             print("You have acquired the Cloak of Mastery!")
                             inventory.append("Cloak of Mastery")
 
-                    # Guide to hidden item based on class
+                    #Guide to hidden item based on class
                     hidden_room = None
                     for room, data in rooms.items():
                         if data.get("hidden"):
@@ -808,103 +1281,20 @@ def main():
 
                 #Win/Loss Check on Lich encounter
                 if current_room == "Phylactery Vault":
-                    all_items_required = {
-                        "Blessed Candle", "Battle-worn Sword", "Holy Water Vial", "Prayer Scroll",
-                        "Spellbook Page", "Silver Dagger", "Protective Amulet", "Soul Siphon Glyph",
-                        "Undead Army Blueprint", "Rusty Key", "Cloak of Mastery", "Ring of True Warding"
-                    }
-
-                    class_hidden_items = {
-                        "Bard": "Lute of Secrets",
-                        "Wizard": "Wish Scroll",
-                        "Paladin": "Ancient Tome",
-                        "Fighter": "Sun Blade"
-                    }
-
-                    player_class_item = class_hidden_items[player_class]
-                    all_items_required.add(player_class_item)
-
-                    # Legendary Win
-                    if all(item in inventory for item in all_items_required):
-                        print("\n⚔️  **LEGENDARY ENDING UNLOCKED** ⚔️")
-                        if player_class == "Bard":
-                            print("Your haunting melody lures the Lich into a trance. The two of you vanish into mist, "
-                                  "locked in a seductive, cursed waltz across eternity. You gain mummy rot—but also a new duet partner.")
-                        elif player_class == "Wizard":
-                            print("With a whisper of the Wish Scroll, you rewrite your fate and the Lich's. "
-                                  "You become something greater—an immortal Archlich, master of the arcane.")
-                        elif player_class == "Paladin":
-                            print(
-                                "You hold the Ancient Tome high and call forth judgment. Divine light erupts from above. "
-                                "A celestial avatar descends and smites the Lich. You are named the Hand of the Divine.")
-                        elif player_class == "Fighter":
-                            print(
-                                "You plunge the Sun Blade deep into the Lich’s phylactery. As the vault crumbles, you "
-                                "set your sights on darker lands. Ravenloft calls. Evil fears your name.")
-                        print("\nYou have reclaimed the Holy Training Grounds and ascended beyond mortality.")
-                        print("🏆  You achieved the **TRUE LEGENDARY ENDING**. Well done, champion.")
-                        return
-
-                    # Class-specific win if hidden item only
-                    elif player_class_item in inventory:
-                        if player_class == "Bard":
-                            print("\n🎵 With a trembling hand, you strum the Lute of Secrets.")
-                            print(
-                                "The melody is irresistible. The Lich pauses, then sways. His jaw unhinges slightly... is he blushing?")
-                            print(
-                                "The two of you vanish into the crypt shadows. Centuries later, tales circulate of a cursed romance ballad.")
-                        elif player_class == "Wizard":
-                            print("\n📜 You speak the final word from the Wish Scroll, and time itself halts.")
-                            print(
-                                "You don’t destroy him. You **become** him. A better version. A smarter, sassier Lich.")
-                        elif player_class == "Paladin":
-                            print("\n🕯 The Ancient Tome flutters open, glowing with celestial light.")
-                            print("A voice beyond time speaks: 'Enough. I will intervene.'")
-                            print(
-                                "A divine hand crushes the Lich like a bug. You fall to one knee as golden wings erupt from your back.")
-                        elif player_class == "Fighter":
-                            print("\n🔥 The Sun Blade ignites in your hand as you charge the Lich head-on.")
-                            print("Steel meets bone. Undead meets unrelenting gym rat.")
-                            print("‘Alright. Who’s next? Someone said *Ravenloft*?’ You start walking.")
-                        return
-
-                    # 7+ items but missing class item: regular class-based victory
-                    elif len(inventory) >= 7:
-                        print(f"\nYou raise your weapon and confront the Lich.")
-                        if "Rusty Key" in inventory:
-                            unlock_ring_of_true_warding()
-                        if player_class == "Bard":
-                            print("With only a half-tuned lute, you sing your final performance. The Lich falters...")
-                            print("Your music buys the world one more dawn.")
-                        elif player_class == "Wizard":
-                            print("You unleash an imperfect spell — raw power arcs across the vault.")
-                            print("The Lich collapses into a heap of arcane detritus. You survive... barely.")
-                        elif player_class == "Paladin":
-                            print("Without the Tome, your prayers are scattered, but your heart is steadfast.")
-                            print("Your blade pierces the Lich's chest. The light answers.")
-                        elif player_class == "Fighter":
-                            print("You shrug. You’ve come this far without magic.")
-                            print("One solid punch and the Lich’s skull skips across the vault floor. Victory.")
-                        print("\nThe world is safe. But you know... it could’ve been more.")
-                        return
-
-                    else:
-                        print("\nYou step into the vault unprepared. The Lich laughs...")
-                        print("With a gesture, your soul is ripped from your body.")
+                    player_hp = lich_encounter(current_room, inventory, player_class, player_hp)
+                    if player_hp <= 0:
+                        print("\nYou succumb to your wounds.")
                         print("Game Over.")
                         return
 
+                    else:
+                       return
 
-#Start Again
-def game_loop():
-    while True:
-        main()
-        choice = input("\nWould you like to play again? (yes/no): ").strip().lower()
-        if choice != "yes":
-            print("Thanks for playing. Farewell, adventurer.")
-            return
+
 #Start the Game
 if __name__ == "__main__":
-    game_loop()
-
+    try:
+        game_loop()
+    except KeyboardInterrupt:
+        print("\nGame interrupted. Farewell, Adventurer")
 
